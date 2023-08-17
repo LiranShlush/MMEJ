@@ -1,0 +1,8 @@
+#G-quadraplex command
+python G4Catchall.py -f {input_fasta_file} --G2GQs_allowed  --max_imperfect_Gtracts 1  --G3L 1..30 --G2L 1..30 > {output_file}
+
+#Minisatellite command
+
+trf {input_fasta_file}  2 5 7 80 10 50 2000 -l 1 -d -h > {output_file}
+
+

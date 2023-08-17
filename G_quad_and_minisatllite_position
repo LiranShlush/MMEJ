@@ -1,0 +1,19 @@
+
+#Plot G-quadraplex postion w.r.t. MMEJ deletion
+
+ggplot(df, aes( y = seq(1, nrow(df), by=1), xmin = Gquad_start , xmax = Gquad_end))  + geom_errorbarh(alpha = 1, colour = '#212121') +
+  geom_errorbarh(aes(y = seq(1, nrow(df), by=1), xmin = 0, xmax = Normalized_End), colour = 'red', alpha = 0.5) +
+  theme_linedraw() +
+    theme(axis.text = element_text(  size = 10, angle = 30, hjust = 1))  +
+ xlab("Normalized coordinates") + ylab("MMEJ deletion") +    theme(axis.title = element_text(size = 10)) 
+
+
+#Plot Minisatllite postion w.r.t. MMEJ deletion
+
+plot4 = ggplot(df, aes( y = seq(1, nrow(df), by=1), xmin = Minisatellite_start, xmax = Minisatellite_end))  + geom_errorbarh(alpha = 1) +
+  geom_errorbarh(aes(y = seq(1, nrow(df), by=1), xmin = 0, xmax = Normalized_End), colour = 'red', alpha = 0.5) +
+  theme_linedraw() +
+    theme(axis.text = element_text(angle = 0, , size = 10)) +   
+ xlab("Normalized coordinates") + ylab("MMEJ deletions") +   theme(axis.title = element_text(size = 10)) 
+ 
+
