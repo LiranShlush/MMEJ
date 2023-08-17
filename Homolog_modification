@@ -1,0 +1,42 @@
+
+
+###############################################################################################################
+Plot Cumulative VAF
+ggplot(data = df, aes(x = sample_name, y = VAF,
+                                          fill = factor(types, levels = unique(df$types)))) +
+  labs(title = 'ssODN distribution', x = "", y = "Cumulative VAF") +
+  scale_fill_manual(values = c("deletion" = "#ed0000", "canonical ASXL1" = "#619CFF",
+                               "Deletion MHs<=2bp" = "#00468b", "Deletion MHs>2bp" = "#0099b4",
+                               "insertion" = "#42b540")) +
+  theme_linedraw() + 
+  theme(strip.background = element_rect(fill = "gray")) +
+  theme(strip.text = element_text(colour = 'black', size = 11)) +
+  geom_bar(stat = 'identity') +
+  facet_wrap(~ variable, ncol = 1) +  # Setting y-axis scales to be free
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size = 9, face = 'bold', hjust = 0.9, angle = 30)) + 
+  theme(legend.position = "none")
+
+
+###############################################################################################################
+Plot VAF of each mutation 
+
+values = c( "deletion" = "#ed0000", "canonical ASXL1" = "#619CFF",
+'Deletion MHs<=2bp' = "#00468b",  'Deletion MHs>2bp' = "#0099b4",
+"insertion" = "#42b540" )
+df_color = data_frame(colnames(t(values)),  t(values)[1,] )
+colnames(df_color) = c("types", "colors")
+df_color_small = unique(df[,c('mutation_types', "types", "colors")])
+
+
+plot = ggplot(data=df , aes( x =value, y =factor(mutation_types1), fill = variable)) +
+labs(title = 'ssODN distribution', x = "SSODNs",
+y = "VAF") +
+geom_bar(stat = 'identity', position='dodge') +
+facet_wrap(~sample_name_short , nrow = 1) +
+coord_cartesian(xlim = c(0, 0.15)) +
+theme(plot.title = element_text(hjust = 0.5),  plot.margin = margin(10, 10, 10, 10)) +
+theme(axis.text.y = element_text(  size = 8, face = 'bold', hjust = 0.9, color= df_color_small$colors )) +
+theme(axis.text.x = element_text(  size = 8, angle = 40, face = 'bold' )) +
+  theme(strip.text = element_text(size = 8, face = 'bold',  hjust = 0.5)) +
+theme(legend.position="none")  
