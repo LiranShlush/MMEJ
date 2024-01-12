@@ -40,9 +40,9 @@ python Del_Read.py homolog_file.tsv input_chr1.bam.bam output_file.tsv chromosom
 
 ## File Descriptions
 
-Main_Exome_100_Shay.m: The main MATLAB script for identifying homologies in genomic sequences.
+Main_Exome_100.m: The main MATLAB script for identifying homologies in genomic sequences.
 
-find_homolog_in_str_Shay.m: A supporting MATLAB function for finding homologies in a given sequence.
+find_homolog_in_str.m: A supporting MATLAB function for finding homologies in a given sequence.
 
 Del_Read.py: The Python script for processing MMEJ search sequences, and searching them in the BAM files, and outputting results.
 
