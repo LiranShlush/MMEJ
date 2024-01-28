@@ -1,10 +1,10 @@
 #This code takes the MMEJ search sequences as an input and outputs the number of mutant reads and the coverage in that region for each MMEJ deletion event 
 
 
-# The input_file_name is a file containing details related to the cooridnates of the homolog
+# The input_file is a homology file containing details related to the coordinates of the homolog
 # The following columns are required:
 
-# Column 1 – Chromsome(as given in the reference genome)
+# Column 1 – Chromosome(as given in the reference genome)
 # Column 2 - Start of the homolog1
 # Column 3 – Start of the homolog2
 # Column 4 – Length of the homolog
