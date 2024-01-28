@@ -45,6 +45,9 @@ Run the Del_Read.py script by providing the "homolog file" generated from the MA
 2)python {Del_Read.py} {homolog_file.tsv} {input_chr1.bam} {output_file.tsv} {chromosome}
 Replace homolog_file.tsv, input_chr1.bam, output_file.tsv, and chromosome with the actual file paths and chromosome identifier.
 
+Note:
+The script is designed to be extendable to other organisms.
+
 ## File Descriptions
 
 Main_Exome_100.m: The main MATLAB script for identifying homologies in genomic sequences.
