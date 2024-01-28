@@ -39,7 +39,7 @@ The script uses a sliding window to examine exonic sequences, pinpointing possib
       pysam==0.11.2.2
   
 ## Requirements for Each Script
-1)Main_Exome_100.m:
+*1)Main_Exome_100.m:*
 Exonic and genomic sequences of the organism of interest.
 
 2)find_homolog_in_str.m:
