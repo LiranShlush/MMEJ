@@ -39,7 +39,9 @@ The script uses a sliding window to examine exonic sequences, pinpointing possib
 Run the Del_Read.py script by providing the "homolog file" generated from the MATLAB scripts, BAM file per chromosome, output_file_name,  and chromosome  as command-line arguments.
 
 **Command-line:**
+
 1)Main_Exome_100_Shay(chromosome)
+
 2)python {Del_Read.py} {homolog_file.tsv} {input_chr1.bam} {output_file.tsv} {chromosome}
 Replace homolog_file.tsv, input_chr1.bam, output_file.tsv, and chromosome with the actual file paths and chromosome identifier.
 
