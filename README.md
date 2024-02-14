@@ -11,7 +11,9 @@ This repository contains a set of Python and MATLAB scripts for genomic sequence
 
 ## Introduction
 
-The toolkit includes three main scripts:
+We start with a MATLAB script called **Main_Exome_100.m** that looks for similar genomic patterns within 100 bases. It then uses another MATLAB tool, **find_homolog_in_str.m**, to refine and identify these patterns. After that, a Python script called **create_search_sequence.py** creates different types of genomic events and saves them. Finally, another Python script, **Del_Read.py**, checks these events and counts how often they occur in specific regions. This combo of MATLAB and Python scripts helps explore these genomic patterns easily.
+
+## Toolkit Overview:
 
 1. **Main_Exome_100.m**: A MATLAB script for identifying homologies in genomic sequences with the maximum distance in the homologies being 100 bases. The script uses a sliding window to examine exonic sequences, pinpointing possible homologies that suggest Microhomology-Mediated End-joining (MMEJ) events. After finding these homologies, the script adjusts the coordinates to match the reference genome and checks them against it. If needed, an optional sequence validation step compares the genomic sequence, highlighting any differences. The results are organized, removing duplicates, fixing coordinates, and filtering out events that are too large or overlapping. The final refined MMEJ events are then outputted to a designated file. 
 
