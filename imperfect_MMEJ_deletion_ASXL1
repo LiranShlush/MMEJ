@@ -1,0 +1,315 @@
+#Obtain the # edited and # unedited reads
+import os
+import pysam
+from Bio import SeqIO
+
+# Specify the root directory for input BAM files
+bam_root = "/path/to/bam/files/"
+
+# Specify the root directory for output files
+output_root = "/path/to/output/files/"
+os.makedirs(output_root, exist_ok=True)
+
+# For reading the reference genome sequence
+ref_genome_chr = '/path/to/reference/genome.fa'
+chr_seq = next(SeqIO.parse(ref_genome_chr, "fasta"))
+
+# List of patient identifiers
+patient_list = [...]  # Add your list of patient identifiers here
+
+# Iterate over different types ('A_B' in this case)
+for types in ['A_B']:
+    output_file = output_root + "total_{v}_type{types}_total_read_count_PAM.tsv".format(v='varscan', types=types)
+    out = open(output_file, 'w')
+    count_total = []
+
+    # Iterate over each patient
+    for patient in patient_list:
+        # Construct the BAM file path for the current patient
+        bam_path = bam_root + "{p}/{p}.sorted.rg.realigned.bam".format(p=patient)
+        sample_name_short = patient.replace('-', "").split('_')[0]
+
+        # Open the BAM file using pysam
+        bam_file = pysam.AlignmentFile(bam_path, "rb")
+
+        # Define the search sequences for edited and unedited reads
+        search_seq_edit = chr_seq[31022379:31022393].seq + 'C' + chr_seq[31022394:31022397].seq
+        search_seq_unedit = chr_seq[31022379:31022397].seq
+
+        count_edit = 0
+        count_unedit = 0
+
+        # Print the search sequences for reference
+        print("Search Sequences:", search_seq_edit, search_seq_unedit)
+
+        # Iterate over reads in the BAM file
+        for read in bam_file.fetch():
+            if str(search_seq_edit) in read.query_sequence:
+                count_edit += 1
+
+            if str(search_seq_unedit) in read.query_sequence:
+                count_unedit += 1
+
+        # Append the count information to the total count list
+        count_total.append('{sn}\t{count_edit}\t{count_unedit}\n'.format(
+            count_edit=count_edit,
+            count_unedit=count_unedit,
+            sn=patient))
+
+    # Write the total counts to the output file
+    out.writelines(count_total)
+    out.close()
+
+
+#Function to obtain deletions that have PAM change, and  edit in the homolog retained
+import pysam
+from Bio import SeqIO
+
+def search_seq_mutation_typeA(bam_path, output_path, group, sample_name):
+
+    # Dictionary specifying different mutation options
+    hom_change = {
+        'option1': {'m1': {31022426: 'T'}},
+        'option2': {'m0': {31022426: 'C'}},
+        'option3': {'mlast': {31022437: 'G'}},
+        'option4': {'no_pam': {31022426: 'C'}}
+    }
+
+    PAM_coord = 31022393
+
+    ref_genome_chr = '/path/to/reference/genome.fa'
+    chr_seq = next(SeqIO.parse(ref_genome_chr, "fasta"))
+
+    out = open(output_path, 'a')
+    count_total = []
+    outf = pysam.AlignmentFile(bam_path, "rb")
+
+    sample_name_short = sample_name.split('_')[1]
+    small_dict = list(hom_change[sample_name_short].values())[0]
+    mismatch_hom_coord = list(small_dict.keys())[0]
+    mismatch_hom_nuc = list(small_dict.values())[0]
+
+    for i, row in group.iterrows():
+        count_GC_CG = 0
+        count_GT_CG = 0
+        count_GC_AG = 0
+        count_GT_AG = 0
+        count_unedit = 0
+
+        Start_del = int(row.Start) - 1
+        End_del = int(row.End)
+        Start_seq1 = Start_del - 5
+        End_seq1 = End_del
+        start_5 = outf.count_coverage('20', start=Start_del-5, end=Start_del-4)
+        end_5 = outf.count_coverage('20', start=End_del+5, end=End_del+6)
+        basecov_start_5 = start_5[0][0] + start_5[1][0] + start_5[2][0] + start_5[3][0]
+        basecov_end_5 = end_5[0][0] + end_5[1][0] + end_5[2][0] + end_5[3][0]
+        mean_coverage = round(np.mean([basecov_start_5, basecov_end_5]))
+
+        addition = 'C' + chr_seq[PAM_coord+1:Start_del].seq
+
+        addition_unedit = chr_seq[PAM_coord:Start_del].seq
+
+        deletion_list = ['canonical ASXL1']
+
+        if row.type in deletion_list:
+            right_flank = chr_seq[End_seq1: mismatch_hom_coord-1].seq + mismatch_hom_nuc + chr_seq[mismatch_hom_coord:31022439].seq
+
+            search_seq_GC_CG = addition[:-2] + "GC" + right_flank + chr_seq[31022439:31022444].seq
+            search_seq_GT_CG = addition + right_flank + chr_seq[31022439:31022444].seq
+
+            search_seq_GC_AG = addition[:-2] + "GC" + right_flank[:-2] + "AG" + chr_seq[31022439:31022444].seq
+            search_seq_GT_AG = addition + right_flank[:-2] + "AG" + chr_seq[31022439:31022444].seq
+
+            search_seq_unedit = addition_unedit + chr_seq[End_seq1:31022439].seq + chr_seq[31022439:31022444].seq
+
+            for read in outf.fetch():
+                if (str(search_seq_GC_CG) in read.query_sequence):
+                    count_GC_CG += 1
+
+                if (str(search_seq_GT_CG) in read.query_sequence):
+                    count_GT_CG += 1
+
+                if (str(search_seq_GC_AG) in read.query_sequence):
+                    count_GC_AG += 1
+
+                if (str(search_seq_GT_AG) in read.query_sequence):
+                    count_GT_AG += 1
+
+                if (str(search_seq_unedit) in read.query_sequence):
+                    count_unedit += 1
+
+        count_total.append('{i}\t{S}\t{E}\t{Ref}\t{Alt}\t{sn}\t{count_GC_CG}\t{count_GT_CG}\t{count_GC_AG}\t{count_GT_AG}\t{count_unedit}\t{mean}\t{t}\n'.format(
+            i=i,
+            count_GC_CG=count_GC_CG,
+            count_GT_CG=count_GT_CG,
+            count_GC_AG=count_GC_AG,
+            count_GT_AG=count_GT_AG,
+            S=row.Start,
+            E=row.End,
+            sn=sample_name,
+            Ref=row.Ref,
+            Alt=row.Alt,
+            count_unedit=count_unedit,
+            mean=mean_coverage,
+            t=row.type
+        ))
+
+    out.writelines(count_total)
+    outf.close()
+    return count_total
+
+
+#Function to obtain deletions that have PAM change, and no edit in the homolog retained
+import pysam
+from Bio import SeqIO
+
+def search_seq_mutation_typeB(bam_path, output_path, group, sample_name):
+
+    ref_genome_chr = '/path/to/reference/genome.fa'
+    chr_seq = next(SeqIO.parse(ref_genome_chr, "fasta"))
+
+    out = open(output_path, 'a')
+    count_total = []
+    outf = pysam.AlignmentFile(bam_path, "rb")
+
+    for i, row in group.iterrows():
+        count_GC_CG = 0
+        count_GT_CG = 0
+        count_GC_AG = 0
+        count_GT_AG = 0
+        count_unedit_GC_CG = 0
+        count_unedit_GT_CG = 0
+        count_unedit_GC_AG = 0
+        count_unedit_GT_AG = 0
+
+        PAM_coord = 31022393
+
+        Start_del = int(row.Start) - 1
+        End_del = int(row.End)
+        Start_seq1 = Start_del - 5
+        End_seq1 = End_del
+        start_5 = outf.count_coverage('20', start=Start_del-5, end=Start_del-4)
+        end_5 = outf.count_coverage('20', start=End_del+5, end=End_del+6)
+        basecov_start_5 = start_5[0][0] + start_5[1][0] + start_5[2][0] + start_5[3][0]
+        basecov_end_5 = end_5[0][0] + end_5[1][0] + end_5[2][0] + end_5[3][0]
+        mean_coverage = round(np.mean([basecov_start_5, basecov_end_5]))
+
+        addition = 'C' + chr_seq[PAM_coord+1:Start_del].seq
+        addition_unedit = chr_seq[PAM_coord:Start_del].seq
+
+        if sample_name_short == 'option4':
+            addition = addition_unedit
+
+        deletion_list = ['canonical ASXL1']
+
+        if row.type in deletion_list:
+            right_flank = chr_seq[End_seq1:31022439].seq
+
+            search_seq_GC_CG = addition[:-2] + "GC" + right_flank + chr_seq[31022439:31022444].seq
+            search_seq_GT_CG = addition + right_flank + chr_seq[31022439:31022444].seq
+
+            search_seq_GC_AG = addition[:-2] + "GC" + right_flank[:-2] + "AG" + chr_seq[31022439:31022444].seq
+            search_seq_GT_AG = addition + right_flank[:-2] + "AG" + chr_seq[31022439:31022444].seq
+
+            search_seq_unedit_GT_CG = addition_unedit + right_flank + chr_seq[31022439:31022444].seq
+            search_seq_unedit_GC_CG = addition_unedit[:-2] + "GC" + right_flank + chr_seq[31022439:31022444].seq
+            search_seq_unedit_GT_AG = addition_unedit + right_flank[:-2] + "AG" + chr_seq[31022439:31022444].seq
+            search_seq_unedit_GC_AG = addition_unedit[:-2] + "GC" + right_flank[:-2] + "AG" + chr_seq[31022439:31022444].seq
+
+            for read in outf.fetch():
+                if (str(search_seq_GC_CG) in read.query_sequence):
+                    count_GC_CG += 1
+
+                if (str(search_seq_GT_CG) in read.query_sequence):
+                    count_GT_CG += 1
+
+                if (str(search_seq_GC_AG) in read.query_sequence):
+                    count_GC_AG += 1
+
+                if (str(search_seq_GT_AG) in read.query_sequence):
+                    count_GT_AG += 1
+
+                if (str(search_seq_unedit_GT_CG) in read.query_sequence):
+                    count_unedit_GT_CG += 1
+
+                if (str(search_seq_unedit_GC_CG) in read.query_sequence):
+                    count_unedit_GC_CG += 1
+
+                if (str(search_seq_unedit_GT_AG) in read.query_sequence):
+                    count_unedit_GT_AG += 1
+
+                if (str(search_seq_unedit_GC_AG) in read.query_sequence):
+                    count_unedit_GC_AG += 1
+
+        count_total.append(
+            '{i}\t{S}\t{E}\t{Ref}\t{Alt}\t{sn}\t{count_GC_CG}\t{count_GT_CG}\t{count_GC_AG}\t{count_GT_AG}\t'
+            '{count_unedit_GC_CG}\t{count_unedit_GT_CG}\t{count_unedit_GC_AG}\t{count_unedit_GT_AG}\t{mean}\t{t}\n'
+            .format(
+                i=i,
+                count_GC_CG=count_GC_CG,
+                count_GT_CG=count_GT_CG,
+                count_GC_AG=count_GC_AG,
+                count_GT_AG=count_GT_AG,
+                count_unedit_GC_CG=count_unedit_GC_CG,
+                count_unedit_GT_CG=count_unedit_GT_CG,
+                count_unedit_GC_AG=count_unedit_GC_AG,
+                count_unedit_GT_AG=count_unedit_GT_AG,
+                S=row.Start, E=row.End, sn=sample_name,
+                Ref= row.Ref, Alt = row.Alt, \
+                                         count_unedit = count_unedit, mean = mean_coverage, t=row.type   ))
+
+#             if i % 100000:
+
+#                 out.writelines(count_total)
+#                 count_total = []
+
+    out.writelines(count_total)
+    outf.close()
+    return count_total
+
+
+
+#Code to excute the two funtions
+future_dict = {}
+root = "/path/to/root/directory/"
+root_output = "/path/to/output/directory/"
+
+data = {'Start': [31022403],
+        'End': [31022425],
+        'Ref': ['CACCACTGCCATAGAGAGGCGGC'],
+        'Alt': ['-'],
+        'type': ['canonical ASXL1']}
+
+df = pd.DataFrame(data)
+
+os.makedirs(root_output, exist_ok=True)
+
+output_file_typeA = root_output + "total_{v}_hom_count_typeA.tsv".format(v='varscan')
+output_file_typeB = root_output + "total_{v}_hom_count_typeB.tsv".format(v='varscan')
+
+deletion_list = ['canonical ASXL1']
+
+if os.path.exists(output_file_typeA):
+    os.remove(output_file_typeA)
+if os.path.exists(output_file_typeB):
+    os.remove(output_file_typeB)
+
+executor = Client("{host}.wexac.weizmann.ac.il:{port}".format(port = port,host=host))
+
+for patient in patient_list:
+    future_dict.setdefault(patient, dict())
+    bam_name = root + "{sn}/{sn}.sorted.rg.realigned.bam".format(sn=patient)
+
+    future_dict[patient]['search_seq_mutationA'] = executor.submit(search_seq_mutation_typeA,
+                                                                    output_file=output_file_typeA,
+                                                                    bam_name=bam_name,
+                                                                    group=df,
+                                                                    sample_name=patient
+                                                                    )
+    future_dict[patient]['search_seq_mutationB'] = executor.submit(search_seq_mutation_typeB,
+                                                                    output_file=output_file_typeB,
+                                                                    bam_name=bam_name,
+                                                                    group=df,
+                                                                    sample_name=patient
+                                                                    )
